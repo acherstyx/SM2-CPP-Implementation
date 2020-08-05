@@ -7,7 +7,7 @@
 #include <catch2/catch.hpp>
 #include "big.h"
 
-#include "sm2/utils.h"
+#include "sm2/inner_utils.h"
 
 TEST_CASE("Rand SEED test") {
     for (int i = 0; i < 100; i++) {
@@ -29,4 +29,20 @@ TEST_CASE("Hash 256 test") {
         cout << a.len() << '\n';
         REQUIRE(a.len() <= 256);
     }
+}
+
+TEST_CASE("Gen a, b for ECC") {
+    for (int i = 0; i < 100; i++) {
+        Big hash_seed = Hash_256(gen_SEED());
+        Big p, a, b;
+        p = 99997913;
+        gen_ECC_a_b(hash_seed, p, a, b);
+    }
+}
+
+TEST_CASE("Valid a, b for ECC") {
+    REQUIRE(valid_ECC_a_b(-3, 2, 200) == false);
+    REQUIRE(valid_ECC_a_b(-3, 2, 108) == false);
+    REQUIRE(valid_ECC_a_b(3, 2, 100) == true);
+    REQUIRE(valid_ECC_a_b(3, 2, 216) == false);
 }

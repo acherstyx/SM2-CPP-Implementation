@@ -1,7 +1,7 @@
 //
 // Created by acherstyx on 8/5/20.
 //
-#include "utils.h"
+#include "inner_utils.h"
 
 #include "big.h"
 
@@ -31,9 +31,22 @@ Big Hash_256(const Big &SEED) {
 }
 
 
-void gen_ECC(const Big &H, Big &a, Big &b) {
+void gen_ECC_a_b(const Big &H, const Big &p, Big &a, Big &b) {
 #define R H
+    Big r = R % p;
+    for (int retry = 0; retry < 1000; retry++) {
 
-
+    }
+    throw exception();
 #undef R
+}
+
+
+bool valid_ECC_a_b(const Big &a, const Big &b, const Big &p) {
+    Big condition = (4 * a * a * a + 27 * b * b) % p;
+    cout << condition;
+    if (condition == 0)
+        return false;
+    else
+        return true;
 }
