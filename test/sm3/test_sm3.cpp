@@ -18,7 +18,7 @@ TEST_CASE("SM3 hash test") {
     SM3Calc(words, 10, message);
     for (int i = 0; i < 100; i++) {
         if (i == 32) {
-            cout << "||";
+            cout << "|256 bit|";
         }
         cout << '[' << int(message[i]) << ']';
     }
@@ -35,14 +35,11 @@ TEST_CASE("Transfer between [unsigned char] and [Big]") {
             unsigned char message[1000];
             Big a = rand(200, 2);
             Big b;
-            int len;
+            unsigned int len;
             cout << a << '\n';
             big2char(a, message, len);
 
             for (int ii = 0; ii < 100; ii++) {
-                if (ii == 32) {
-                    cout << "||";
-                }
                 cout << '[' << int(message[ii]) << ']';
             }
             cout << "\n";
@@ -50,5 +47,15 @@ TEST_CASE("Transfer between [unsigned char] and [Big]") {
             b = char2big(message, len);
             REQUIRE(a == b);
         }
+    }
+}
+
+TEST_CASE("SM3 hash wrapper") {
+    for (int i = 0; i < 1000; i++) {
+        Big msg = rand(500, 2);
+        Big hash_256 = SM3_Hash_256(msg);
+        cout << hash_256 << "\n";
+        cout << hash_256.len() << '\n';
+        REQUIRE(hash_256.len() <= 256);
     }
 }
