@@ -4,28 +4,25 @@ set(CMAKE_CXX_STANDARD 11)            # Enable c++14 standard
 add_definitions(-std=c++11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64 -O2 ")
 
-# test source file
-set(TEST_SOURCE test/sm2/test_seed.cpp)
+#include
+include_directories(include)
+
+include_directories(src)
+
 
 # miracl
 include_directories(miracl)
 add_library(LIBMIRACL miracl/miracl.a)
 set_target_properties(LIBMIRACL PROPERTIES LINKER_LANGUAGE CXX)
-# miracl big
-add_library(BIG miracl/big.cpp miracl/big.h)
+add_library(LIBBIG miracl/big.cpp miracl/big.h)
+
+set(HEADER_SOURCE include/sm2.h)
+set(MAIN_SOURCE src/sm2/utils.cpp)
+set(TEST_SOURCE test/sm2/test_utils.cpp)
 
 # executable target
-add_executable(UnitTest ${TEST_SOURCE})
-target_link_libraries(UnitTest ${LIBMIRACL})
+add_executable(TestMiracl test/test_miracl_env.cpp)
+target_link_libraries(TestMiracl ${LIBMIRACL} LIBBIG)
 
-add_executable(RUN src/sm2/seed.cpp miracl/big.cpp)
-target_link_libraries(RUN ${LIBMIRACL})
-target_link_libraries(RUN BIG)
-
-
-add_executable(TestMiracl test/miracl_env/test_main.cpp miracl/big.cpp)
-target_link_libraries(TestMiracl ${LIBMIRACL})
-target_link_libraries(TestMiracl BIG)
-
-
-
+add_executable(UnitTest ${TEST_SOURCE} ${HEADER_SOURCE} ${MAIN_SOURCE} miracl/big.cpp)
+target_link_libraries(UnitTest ${LIBMIRACL} LIBBIG)
