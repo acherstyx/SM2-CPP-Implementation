@@ -7,6 +7,7 @@
 
 #include "big.h"
 
+#include "sm3.h"
 
 Big gen_SEED();
 

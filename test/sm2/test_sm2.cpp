@@ -35,8 +35,12 @@ TEST_CASE("Gen a, b for ECC") {
     for (int i = 0; i < 100; i++) {
         Big hash_seed = Hash_256(gen_SEED());
         Big p, a, b;
-        p = 99997913;
+        p = 99997867;
         gen_ECC_a_b(hash_seed, p, a, b);
+        cout << "[seed: " << hash_seed << " ";
+        cout << "a: " << a << " ";
+        cout << "b: " << b << "]\n";
+        REQUIRE(valid_ECC_a_b(a, b, p));
     }
 }
 

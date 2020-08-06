@@ -2,8 +2,13 @@
 // Created by acherstyx on 8/5/20.
 //
 #include "inner_utils.h"
+#include "sm3.h"
 
 #include "big.h"
+
+extern "C" {
+#include "miracl.h"
+}
 
 #include <random>
 #include <ctime>
@@ -25,26 +30,30 @@ Big gen_SEED() {
 }
 
 Big Hash_256(const Big &SEED) {
-    // TODO: SM3 hash
-    Big mod256 = pow(Big(2), 256);
-    return SEED % mod256;
+    return SM3_Hash_256(SEED);
 }
 
 
-void gen_ECC_a_b(const Big &H, const Big &p, Big &a, Big &b) {
+void gen_ECC_a_b(const Big &H, const Big &p, Big &a_, Big &b_) {
 #define R H
-    Big r = R % p;
-    for (int retry = 0; retry < 1000; retry++) {
+    while (true) {
+        Big r = R % p;
 
+        b_ = r;
+        a_ = rand(p.len() + 10, 2) % p;
+        if (valid_ECC_a_b(a_, b_, p))
+            return;
+        else
+            continue;
     }
-    throw exception();
+
 #undef R
 }
 
 
 bool valid_ECC_a_b(const Big &a, const Big &b, const Big &p) {
     Big condition = (4 * a * a * a + 27 * b * b) % p;
-    cout << condition;
+//    cout << condition;
     if (condition == 0)
         return false;
     else
