@@ -1,8 +1,11 @@
 //
 // Created by acherstyx on 8/5/20.
 //
+#include <iostream>
+#include <ctime>
 #include "inner_utils.h"
 #include "sm3.h"
+#include "ecn.h"
 
 #include "big.h"
 
@@ -59,3 +62,4 @@ bool valid_ECC_a_b(const Big &a, const Big &b, const Big &p) {
     else
         return true;
 }
+
