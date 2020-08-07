@@ -54,7 +54,10 @@ TEST_CASE("Valid a, b for ECC", "utils") {
 }
 
 TEST_CASE("SM2 Key gen") {
-    Big x, y, key;
-    sm2_key_gen(x, y, key);
-    cout << "x: " << x << " y: " << y << " key: " << key;
+    for (int i = 0; i < 10; i++) {
+        Big x, y, key;
+        sm2_key_gen(x, y, key);
+        cout << "x: " << x << " y: " << y << " key: " << key << "\n";
+//        sleep(1);
+    }
 }

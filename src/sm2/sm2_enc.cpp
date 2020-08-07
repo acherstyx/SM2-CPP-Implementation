@@ -2,6 +2,10 @@
 // Created by acherstyx on 8/7/20.
 //
 
+#include <ctime>
+#include <cstdlib>
+#include <cstdio>
+#include <unistd.h>
 #include "sm2_enc.h"
 #include "big.h"
 #include "ecn.h"
@@ -34,6 +38,7 @@ void sm2_key_gen(Big &x, Big &y, Big &private_key) {
 
     mip->IOBASE = 16;
 
+    // use static ecc parameter
     cinstr(p.getbig(), Ecc256.p);
     cinstr(a.getbig(), Ecc256.a);
     cinstr(b.getbig(), Ecc256.b);
@@ -46,10 +51,15 @@ void sm2_key_gen(Big &x, Big &y, Big &private_key) {
     g = epoint_init();
     epoint_set(x.getbig(), y.getbig(), 0, g);
     // rand private key
-    irand(time(NULL));
+    struct timespec tn;
+    clock_gettime(CLOCK_REALTIME, &tn);
+
+    irand(unsigned(tn.tv_nsec));
+
     bigrand(n.getbig(), private_key.getbig());
     // point
     ecurve_mult(private_key.getbig(), g, g);
     epoint_get(g, x.getbig(), y.getbig());
 }
 
+//void sm2_enc(char * message, Big )
