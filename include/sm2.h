@@ -8,5 +8,4 @@
 // lib
 #include "big.h"
 
-
 #endif //SM2_SM2_H

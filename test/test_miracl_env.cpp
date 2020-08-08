@@ -12,7 +12,6 @@ extern "C" {
 #include "miracl.h"
 }
 
-
 Miracl precision(500, 10); // This makes sure that MIRACL
 
 int run2(int n) {

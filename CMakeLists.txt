@@ -34,6 +34,9 @@ set(MAIN_SOURCE
         src/sm3/sm3_reference.cpp
         src/sm2/sm2_enc.cpp)
 
+# sm2 lib
+add_library(SM2 ${HEADER_SOURCE} ${MAIN_SOURCE})
+
 # executable target
 add_executable(TestMiracl test/test_miracl_env.cpp)
 target_link_libraries(TestMiracl ${LIBMIRACL} LIBBIG)
@@ -41,5 +44,5 @@ target_link_libraries(TestMiracl ${LIBMIRACL} LIBBIG)
 add_executable(SM3UnitTest test/sm3/test_sm3.cpp ${HEADER_SOURCE} ${MAIN_SOURCE} miracl/big.cpp)
 target_link_libraries(SM3UnitTest ${LIBMIRACL} LIBBIG)
 
-add_executable(SM2UnitTest test/sm2/test_sm2.cpp ${HEADER_SOURCE} ${MAIN_SOURCE} ${LIB_SOURCE})
-target_link_libraries(SM2UnitTest ${LIBMIRACL} LIBBIG)
+add_executable(SM2UnitTest test/sm2/test_sm2.cpp ${LIB_SOURCE})
+target_link_libraries(SM2UnitTest ${LIBMIRACL} LIBBIG SM2)

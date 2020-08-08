@@ -4,21 +4,12 @@
 #include <iostream>
 #include <ctime>
 #include "inner_utils.h"
-#include "sm3.h"
-#include "ecn.h"
 
 #include "big.h"
 
 extern "C" {
 #include "miracl.h"
 }
-
-#include <random>
-#include <ctime>
-
-#define BINARY_PRECISION 500
-
-Miracl precision(BINARY_PRECISION, 2);
 
 Big gen_SEED() {
     time_t seed;
@@ -27,9 +18,9 @@ Big gen_SEED() {
     struct timespec tn;
     clock_gettime(CLOCK_REALTIME, &tn);
 
-    srand(unsigned(tn.tv_nsec));
+    irand(unsigned(tn.tv_nsec));
 
-    return rand(int(random()) % (BINARY_PRECISION - 192) + 192, 2);
+    return rand(int(random()) % (512 - 192) + 192, 2);
 }
 
 Big Hash_256(const Big &SEED) {

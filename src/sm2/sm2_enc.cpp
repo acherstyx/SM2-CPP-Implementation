@@ -4,14 +4,9 @@
 
 #include <ctime>
 #include <cstdlib>
-#include <cstdio>
-#include <unistd.h>
 #include "sm2_enc.h"
 #include "big.h"
 #include "ecn.h"
-#include "sm3.h"
-
-//Miracl precision(2048, 2);
 
 typedef struct FPECC {
     char *p;
@@ -60,6 +55,7 @@ void sm2_key_gen(Big &x, Big &y, Big &private_key) {
     // point
     ecurve_mult(private_key.getbig(), g, g);
     epoint_get(g, x.getbig(), y.getbig());
+    mip->IOBASE = 10;
 }
 
 int kdf(unsigned char *zl, unsigned char *zr, int klen, unsigned char *kbuf) {
@@ -119,8 +115,8 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     FPECC ecc_config = Ecc256; // default ecc
     miracl *mip = mirsys(20, 0);
     epoint *g, *pb; // public key
-    Big c1_x, c1_y;
-    Big c2_x, c2_y;
+    Big x1, y1;
+    Big x2, y2;
     unsigned char zl[32], zr[32];
 
     mip->IOBASE = 16;
@@ -153,21 +149,21 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
 
     // c1
     ecurve_mult(k.getbig(), g, g);
-    epoint_get(g, c1_x.getbig(), c1_y.getbig());
-    big_to_bytes(32, c1_x.getbig(), (char *) msg_after_enc, TRUE);
-    big_to_bytes(32, c1_y.getbig(), (char *) msg_after_enc + 32, TRUE);
+    epoint_get(g, x1.getbig(), y1.getbig());
+    big_to_bytes(32, x1.getbig(), (char *) msg_after_enc, TRUE);
+    big_to_bytes(32, y1.getbig(), (char *) msg_after_enc + 32, TRUE);
 
 //    cout << "C1: " << c1_x;
 //    cout << " " << c1_y << "\n";
 
     // c2
     ecurve_mult(k.getbig(), pb, pb);
-    epoint_get(pb, c2_x.getbig(), c2_y.getbig());
+    epoint_get(pb, x2.getbig(), y2.getbig());
 
 //    cout << "[enc] x2: " << c2_x << " y2: " << c2_y << '\n';
 
-    big_to_bytes(32, c2_x.getbig(), (char *) zl, TRUE);
-    big_to_bytes(32, c2_y.getbig(), (char *) zr, TRUE);
+    big_to_bytes(32, x2.getbig(), (char *) zl, TRUE);
+    big_to_bytes(32, y2.getbig(), (char *) zr, TRUE);
 
     kdf(zl, zr, msg_len, msg_after_enc + 64);
 
@@ -181,6 +177,7 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     memcpy(temp + msg_len + 32, zr, msg_len);
     SM3Calc(temp, 63 + msg_len, msg_after_enc + 64 + msg_len);
 
+    mip->IOBASE = 10;
     return msg_len + 96;
 }
 
@@ -221,5 +218,9 @@ int sm2_dec(unsigned char *msg, int msg_len, Big d, unsigned char *msg_dec) {
     for (int i = 0; i < klen; i++) {
         msg_dec[i] ^= msg[i + 64];
     }
+
+
+    mip->IOBASE = 10;
+
     return klen;
 }
