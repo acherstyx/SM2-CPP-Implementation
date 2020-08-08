@@ -70,14 +70,35 @@ TEST_CASE("SM2 encrypt and decrypt") {
 
     sm2_key_gen(x, y, key);
 
+    cout << "key generation:" << "\n";
+    cout << "\t" << "x: " << x << " y: " << y << "\n";
+    cout << "\t" << "private key(d): " << key << "\n";
+
+    cout << "message before encrypt: ";
+    for (int i = 0; i < klen; i++)
+        cout << int(msg[i]) << " ";
+    cout << "\n";
+
     enc_klen = sm2_enc(msg, klen, x, y, out);
-    cout << "message after encrypt: " << out << "\n";
+
+    cout << "message after encrypt: ";
+    for (int i = 0; i < enc_klen; i++) {
+        cout << int(out[i]) << " ";
+    };
+    cout << "\n";
+
     REQUIRE(enc_klen == klen + 96);
 
     int ret = sm2_dec(out, enc_klen, key, msg_dec);
 
-    cout << "dec: ";
+    cout << "decrypt result: ";
     for (int i = 0; i < ret; i++)
         cout << int(msg_dec[i]) << " ";
     cout << "\n";
+
+    REQUIRE(ret == klen);
+
+    for (int i = 0; i < klen; i++) {
+        REQUIRE(msg[i] == msg_dec[i]);
+    }
 }

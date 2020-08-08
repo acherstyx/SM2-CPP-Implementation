@@ -149,7 +149,7 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     clock_gettime(CLOCK_REALTIME, &tn);
     irand(unsigned(tn.tv_nsec));
     bigrand(n.getbig(), k.getbig());
-    cout << "rand k: " << k << "\n";
+//    cout << "rand k: " << k << "\n";
 
     // c1
     ecurve_mult(k.getbig(), g, g);
@@ -157,14 +157,14 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     big_to_bytes(32, c1_x.getbig(), (char *) msg_after_enc, TRUE);
     big_to_bytes(32, c1_y.getbig(), (char *) msg_after_enc + 32, TRUE);
 
-    cout << "C1: " << c1_x;
-    cout << " " << c1_y << "\n";
+//    cout << "C1: " << c1_x;
+//    cout << " " << c1_y << "\n";
 
     // c2
     ecurve_mult(k.getbig(), pb, pb);
     epoint_get(pb, c2_x.getbig(), c2_y.getbig());
 
-    cout << "[enc] x2: " << c2_x << " y2: " << c2_y << '\n';
+//    cout << "[enc] x2: " << c2_x << " y2: " << c2_y << '\n';
 
     big_to_bytes(32, c2_x.getbig(), (char *) zl, TRUE);
     big_to_bytes(32, c2_y.getbig(), (char *) zr, TRUE);
@@ -214,7 +214,7 @@ int sm2_dec(unsigned char *msg, int msg_len, Big d, unsigned char *msg_dec) {
     big_to_bytes(32, x2.getbig(), (char *) zl, TRUE);
     big_to_bytes(32, y2.getbig(), (char *) zr, TRUE);
 
-    cout << "[dec] x2: " << x2 << " y2: " << y2 << '\n';
+//    cout << "[dec] x2: " << x2 << " y2: " << y2 << '\n';
 
     kdf(zl, zr, klen, msg_dec);
 
