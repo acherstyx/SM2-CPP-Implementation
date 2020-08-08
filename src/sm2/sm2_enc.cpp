@@ -9,17 +9,18 @@
 #include "sm2_enc.h"
 #include "big.h"
 #include "ecn.h"
+#include "sm3.h"
 
 //Miracl precision(2048, 2);
 
-struct FPECC {
+typedef struct FPECC {
     char *p;
     char *a;
     char *b;
     char *n;
     char *x;
     char *y;
-};
+} FPECC;
 
 /*SM2*/
 struct FPECC Ecc256 = {
@@ -53,7 +54,6 @@ void sm2_key_gen(Big &x, Big &y, Big &private_key) {
     // rand private key
     struct timespec tn;
     clock_gettime(CLOCK_REALTIME, &tn);
-
     irand(unsigned(tn.tv_nsec));
 
     bigrand(n.getbig(), private_key.getbig());
@@ -62,4 +62,118 @@ void sm2_key_gen(Big &x, Big &y, Big &private_key) {
     epoint_get(g, x.getbig(), y.getbig());
 }
 
-//void sm2_enc(char * message, Big )
+int kdf(unsigned char *zl, unsigned char *zr, int klen, unsigned char *kbuf) {
+/*
+return 0: kbuf is 0, unusable
+       1: kbuf is OK
+*/
+    unsigned char buf[70];
+    unsigned char digest[32];
+    unsigned int ct = 0x00000001;
+    int i, m, n;
+    unsigned char *p;
+
+
+    memcpy(buf, zl, 32);
+    memcpy(buf + 32, zr, 32);
+
+    m = klen / 32;
+    n = klen % 32;
+    p = kbuf;
+
+    for (i = 0; i < m; i++) {
+        buf[64] = (ct >> 24) & 0xFF;
+        buf[65] = (ct >> 16) & 0xFF;
+        buf[66] = (ct >> 8) & 0xFF;
+        buf[67] = ct & 0xFF;
+        SM3Calc(buf, 68, p);
+        p += 32;
+        ct++;
+    }
+
+    if (n != 0) {
+        buf[64] = (ct >> 24) & 0xFF;
+        buf[65] = (ct >> 16) & 0xFF;
+        buf[66] = (ct >> 8) & 0xFF;
+        buf[67] = ct & 0xFF;
+        SM3Calc(buf, 68, digest);
+    }
+
+    memcpy(p, digest, n);
+
+    for (i = 0; i < klen; i++) {
+        if (kbuf[i] != 0)
+            break;
+    }
+
+    if (i < klen)
+        return 1;
+    else
+        return 0;
+}
+
+int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_after_enc) {
+    Big a, b, p, n;
+    Big g_x, g_y;   // g = <g_x, g_y>
+    Big k;  // random number for encrypt
+    FPECC ecc_config = Ecc256; // default ecc
+    miracl *mip = mirsys(20, 0);
+    epoint *g, *pb; // public key
+    Big c1_x, c1_y;
+    Big c2_x, c2_y;
+    unsigned char zl[32], zr[32];
+
+    mip->IOBASE = 16;
+
+    // get ecc parameter
+    cinstr(p.getbig(), ecc_config.p);
+    cinstr(a.getbig(), ecc_config.a);
+    cinstr(b.getbig(), ecc_config.b);
+    cinstr(n.getbig(), ecc_config.n);
+
+    ecurve_init(a.getbig(), b.getbig(), p.getbig(), MR_PROJECTIVE);
+    // read g
+    cinstr(g_x.getbig(), ecc_config.x);
+    cinstr(g_y.getbig(), ecc_config.y);
+    g = epoint_init();
+    epoint_set(g_x.getbig(), g_y.getbig(), 0, g);
+    // read pb
+    pb = epoint_init();
+    epoint_set(x.getbig(), y.getbig(), 0, pb);
+
+    // random k
+    struct timespec tn;
+    clock_gettime(CLOCK_REALTIME, &tn);
+    irand(unsigned(tn.tv_nsec));
+    bigrand(n.getbig(), k.getbig());
+
+    // c1
+    ecurve_mult(k.getbig(), g, g);
+    epoint_get(g, c1_x.getbig(), c1_y.getbig());
+    big_to_bytes(32, c1_x.getbig(), (char *) msg_after_enc, TRUE);
+    big_to_bytes(32, c1_y.getbig(), (char *) msg_after_enc + 32, TRUE);
+
+    cout << "C1: " << c1_x;
+    cout << " " << c1_y << "\n";
+
+    // c2
+    ecurve_mult(k.getbig(), pb, pb);
+    epoint_get(pb, c2_x.getbig(), c2_y.getbig());
+    big_to_bytes(32, c2_x.getbig(), (char *) zl, TRUE);
+    big_to_bytes(32, c2_y.getbig(), (char *) zr, TRUE);
+
+    kdf(zl, zr, msg_len, msg_after_enc + 64);
+
+    for (int i = 0; i < msg_len; i++) {
+        msg_after_enc[i + 64] ^= msg[i];
+    }
+
+    unsigned char *temp = (unsigned char *) malloc(sizeof(unsigned char) * (32 + 32 + msg_len));
+    memcpy(temp, zl, 32);
+    memcpy(temp + msg_len, msg, msg_len);
+    memcpy(temp + msg_len + 32, zr, msg_len);
+    SM3Calc(temp, 63 + msg_len, msg_after_enc + 64 + msg_len);
+
+    return msg_len + 96;
+}
+

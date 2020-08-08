@@ -53,11 +53,24 @@ TEST_CASE("Valid a, b for ECC", "utils") {
     REQUIRE(valid_ECC_a_b(3, 2, 216) == false);
 }
 
-TEST_CASE("SM2 Key gen") {
-    for (int i = 0; i < 10; i++) {
-        Big x, y, key;
-        sm2_key_gen(x, y, key);
-        cout << "x: " << x << " y: " << y << " key: " << key << "\n";
+TEST_CASE("SM2") {
+    Big x, y, key;
+    unsigned char msg[50] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+    unsigned char out[1000];
+
+    SECTION("Key gen") {
+        for (int i = 0; i < 10; i++) {
+            sm2_key_gen(x, y, key);
+            cout << "x: " << x << " y: " << y << " key: " << key << "\n";
 //        sleep(1);
+        }
     }
+
+    SECTION("Encrypt") {
+        int ret = sm2_enc(msg, 19, x, y, out);
+        cout << "message after encrypt: " << out << "\n";
+        REQUIRE(ret == 19 + 96);
+    }
+
+
 }

@@ -10,4 +10,6 @@
 
 void sm2_key_gen(Big &x, Big &y, Big &private_key);
 
+int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_after_enc);
+
 #endif //SIMPLE_EXAMPLE_SM2_ENC_H
