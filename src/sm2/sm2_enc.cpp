@@ -136,9 +136,12 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     cinstr(g_x.getbig(), ecc_config.x);
     cinstr(g_y.getbig(), ecc_config.y);
     g = epoint_init();
+
     epoint_set(g_x.getbig(), g_y.getbig(), 0, g);
+
     // read pb
     pb = epoint_init();
+
     epoint_set(x.getbig(), y.getbig(), 0, pb);
 
     // random k
@@ -146,6 +149,7 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     clock_gettime(CLOCK_REALTIME, &tn);
     irand(unsigned(tn.tv_nsec));
     bigrand(n.getbig(), k.getbig());
+    cout << "rand k: " << k << "\n";
 
     // c1
     ecurve_mult(k.getbig(), g, g);
@@ -159,6 +163,9 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     // c2
     ecurve_mult(k.getbig(), pb, pb);
     epoint_get(pb, c2_x.getbig(), c2_y.getbig());
+
+    cout << "[enc] x2: " << c2_x << " y2: " << c2_y << '\n';
+
     big_to_bytes(32, c2_x.getbig(), (char *) zl, TRUE);
     big_to_bytes(32, c2_y.getbig(), (char *) zr, TRUE);
 
@@ -177,3 +184,42 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     return msg_len + 96;
 }
 
+int sm2_dec(unsigned char *msg, int msg_len, Big d, unsigned char *msg_dec) {
+    int klen = msg_len - 96;
+    Big a, b, p, n;
+    epoint *pb;
+    FPECC ecc_config = Ecc256; // default ecc
+    miracl *mip = mirsys(20, 0);
+    Big x1, y1; // c1
+    Big x2, y2;
+    unsigned char zl[32], zr[32];
+
+    mip->IOBASE = 16;
+
+    // get ecc parameter
+    cinstr(p.getbig(), ecc_config.p);
+    cinstr(a.getbig(), ecc_config.a);
+    cinstr(b.getbig(), ecc_config.b);
+    cinstr(n.getbig(), ecc_config.n);
+
+    bytes_to_big(32, (char *) msg, x1.getbig());
+    bytes_to_big(32, (char *) msg + 32, y1.getbig());
+
+    // t
+    ecurve_init(a.getbig(), b.getbig(), p.getbig(), MR_PROJECTIVE);
+    pb = epoint_init();
+    epoint_set(x1.getbig(), y1.getbig(), 0, pb);
+    ecurve_mult(d.getbig(), pb, pb);
+    epoint_get(pb, x2.getbig(), y2.getbig());
+    big_to_bytes(32, x2.getbig(), (char *) zl, TRUE);
+    big_to_bytes(32, y2.getbig(), (char *) zr, TRUE);
+
+    cout << "[dec] x2: " << x2 << " y2: " << y2 << '\n';
+
+    kdf(zl, zr, klen, msg_dec);
+
+    for (int i = 0; i < klen; i++) {
+        msg_dec[i] ^= msg[i + 64];
+    }
+    return klen;
+}
