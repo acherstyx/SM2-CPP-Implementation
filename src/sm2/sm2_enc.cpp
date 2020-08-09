@@ -8,6 +8,8 @@
 #include "big.h"
 #include "ecn.h"
 
+#define DEBUG
+
 typedef struct FPECC {
     char *p;
     char *a;
@@ -68,7 +70,6 @@ return 0: kbuf is 0, unusable
     unsigned int ct = 0x00000001;
     int i, m, n;
     unsigned char *p;
-
 
     memcpy(buf, zl, 32);
     memcpy(buf + 32, zr, 32);
@@ -132,20 +133,23 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     cinstr(g_x.getbig(), ecc_config.x);
     cinstr(g_y.getbig(), ecc_config.y);
     g = epoint_init();
-
     epoint_set(g_x.getbig(), g_y.getbig(), 0, g);
 
     // read pb
     pb = epoint_init();
-
     epoint_set(x.getbig(), y.getbig(), 0, pb);
+
+    restart_encrypt:
 
     // random k
     struct timespec tn;
     clock_gettime(CLOCK_REALTIME, &tn);
     irand(unsigned(tn.tv_nsec));
     bigrand(n.getbig(), k.getbig());
-//    cout << "rand k: " << k << "\n";
+
+#ifdef DEBUG
+    cout << "[enc] rand k: " << k << "\n";
+#endif
 
     // c1
     ecurve_mult(k.getbig(), g, g);
@@ -153,24 +157,29 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     big_to_bytes(32, x1.getbig(), (char *) msg_after_enc, TRUE);
     big_to_bytes(32, y1.getbig(), (char *) msg_after_enc + 32, TRUE);
 
-//    cout << "C1: " << c1_x;
-//    cout << " " << c1_y << "\n";
+#ifdef DEBUG
+    cout << "[enc] x1: " << x1 << " y1: " << y1 << "\n";
+#endif
 
-    // c2
+    // c2, c2 ^= msg
     ecurve_mult(k.getbig(), pb, pb);
     epoint_get(pb, x2.getbig(), y2.getbig());
 
-//    cout << "[enc] x2: " << c2_x << " y2: " << c2_y << '\n';
+#ifdef DEBUG
+    cout << "[enc] x2: " << x2 << " y2: " << y2 << '\n';
+#endif
 
     big_to_bytes(32, x2.getbig(), (char *) zl, TRUE);
     big_to_bytes(32, y2.getbig(), (char *) zr, TRUE);
 
-    kdf(zl, zr, msg_len, msg_after_enc + 64);
+    if (kdf(zl, zr, msg_len, msg_after_enc + 64) == 0)
+        goto restart_encrypt;
 
     for (int i = 0; i < msg_len; i++) {
         msg_after_enc[i + 64] ^= msg[i];
     }
 
+    // c3
     unsigned char *temp = (unsigned char *) malloc(sizeof(unsigned char) * (32 + 32 + msg_len));
     memcpy(temp, zl, 32);
     memcpy(temp + msg_len, msg, msg_len);
@@ -178,7 +187,7 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     SM3Calc(temp, 63 + msg_len, msg_after_enc + 64 + msg_len);
 
     mip->IOBASE = 10;
-    return msg_len + 96;
+    return msg_len + 96;    // [0:64] C1, [64:msg_len+64]: C2->KDF^msg, [msg_len+64:msg_len+96] C3(sm3_hash)
 }
 
 int sm2_dec(unsigned char *msg, int msg_len, Big d, unsigned char *msg_dec) {
@@ -211,14 +220,16 @@ int sm2_dec(unsigned char *msg, int msg_len, Big d, unsigned char *msg_dec) {
     big_to_bytes(32, x2.getbig(), (char *) zl, TRUE);
     big_to_bytes(32, y2.getbig(), (char *) zr, TRUE);
 
-//    cout << "[dec] x2: " << x2 << " y2: " << y2 << '\n';
+#ifdef DEBUG
+    cout << "[dec] x2: " << x2 << " y2: " << y2 << '\n';
+    cout << "[dec] <x2, y2> should be the same with <x2, y2> in [enc]!\n";
+#endif
 
     kdf(zl, zr, klen, msg_dec);
 
     for (int i = 0; i < klen; i++) {
         msg_dec[i] ^= msg[i + 64];
     }
-
 
     mip->IOBASE = 10;
 
