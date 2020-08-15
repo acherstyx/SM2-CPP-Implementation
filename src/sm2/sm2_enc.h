@@ -7,7 +7,7 @@
 
 #include "ecn.h"
 #include "big.h"
-#include "sm3.h"
+#include "sm3/sm3_miracl_wrapper.h"
 
 typedef struct FPECC {
     char *p;
