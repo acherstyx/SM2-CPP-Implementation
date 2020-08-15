@@ -10,16 +10,6 @@
 
 #define DEBUG
 
-typedef struct FPECC {
-    char *p;
-    char *a;
-    char *b;
-    char *n;
-    char *x;
-    char *y;
-} FPECC;
-
-/*SM2*/
 struct FPECC Ecc256 = {
         "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF",
         "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC",
@@ -119,6 +109,11 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     Big x1, y1;
     Big x2, y2;
     unsigned char zl[32], zr[32];
+
+
+    big test1 = mirvar(10009);
+    Big test(test1);
+    cout << "===========" << test << "==================\n";
 
     mip->IOBASE = 16;
 

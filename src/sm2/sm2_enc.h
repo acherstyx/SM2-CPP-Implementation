@@ -9,6 +9,18 @@
 #include "big.h"
 #include "sm3.h"
 
+typedef struct FPECC {
+    char *p;
+    char *a;
+    char *b;
+    char *n;
+    char *x;
+    char *y;
+} FPECC;
+
+/*SM2*/
+extern struct FPECC Ecc256;
+
 void sm2_key_gen(Big &x, Big &y, Big &private_key);
 
 int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_after_enc);

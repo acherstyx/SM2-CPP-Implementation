@@ -8,9 +8,8 @@
 #include "big.h"
 
 #include "precision.h"
-#include "sm2/inner_utils.h"
-#include "sm2/sm2_enc.h"
 
+#include "sm2/inner_utils.h"
 
 TEST_CASE("Utils") {
     SECTION("Rand SEED test", "utils") {
@@ -56,6 +55,9 @@ TEST_CASE("Utils") {
         REQUIRE(valid_ECC_a_b(3, 2, 216) == false);
     }
 }
+
+
+#include "sm2/sm2_enc.h"
 
 TEST_CASE("SM2 encryption") {
 
@@ -108,4 +110,37 @@ TEST_CASE("SM2 encryption") {
             REQUIRE(msg[i] == msg_dec[i]);
         }
     }
+}
+
+#include "sm2/sm2_sign.h"
+
+TEST_CASE("SM2 Sign") {
+
+    SECTION("Calculate hash value Z_A") {
+        cout << "[Calculate hash value Z_A]" << "\n";
+
+        Big x_a, y_a, key;
+        sm2_key_gen(x_a, y_a, key);
+
+
+        miracl *mip = mirsys(20, 0);
+        mip->IOBASE = 16;
+        Big a, b, x_g, y_g;
+        cinstr(a.getbig(), Ecc256.a);
+        cinstr(b.getbig(), Ecc256.b);
+        cinstr(x_g.getbig(), Ecc256.x);
+        cinstr(y_g.getbig(), Ecc256.y);
+        mip->IOBASE = 10;
+
+        cout << hash_Za((unsigned char *) "test id", strlen("test id"), a, b, x_g, y_g, x_a, y_a) << "\n";
+        cout << hash_Za((unsigned char *) "id2", strlen("id2"), a, b, x_g, y_g, x_a, y_a) << "\n";
+        cout << hash_Za((unsigned char *) "3", strlen("3"), a, b, x_g, y_g, x_a, y_a) << "\n";
+    }
+
+    SECTION("SM2 sign") {
+        cout << "[SM2 sign]" << "\n";
+
+
+    }
+
 }

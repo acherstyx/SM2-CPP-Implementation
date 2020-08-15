@@ -27,12 +27,14 @@ set(INNER_HEADER_SOURCE
         src/sm2/inner_utils.h
         src/sm3/sm3_miracl_wrapper.h
         src/sm3/sm3_reference.h
-        src/sm2/sm2_enc.h)
+        src/sm2/sm2_enc.h
+        src/sm2/sm2_sign.h)
 set(MAIN_SOURCE
         src/sm2/inner_utils.cpp
         src/sm3/sm3_miracl_wrapper.cpp
         src/sm3/sm3_reference.cpp
-        src/sm2/sm2_enc.cpp)
+        src/sm2/sm2_enc.cpp
+        src/sm2/sm2_sign.cpp)
 
 # sm2 lib
 add_library(SM2 ${HEADER_SOURCE} ${MAIN_SOURCE})
