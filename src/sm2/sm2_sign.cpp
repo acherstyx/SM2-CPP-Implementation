@@ -6,6 +6,8 @@
 #include <ctime>
 #include <cstdlib>
 
+#define SM2_SIGN_DEBUG
+
 Big hash_Za(unsigned char *ID_A, unsigned int ID_A_len, const Big &a, const Big &b,
             const Big &x_g, const Big &y_g, const Big &x_a, const Big &y_a) {
     unsigned char ENTL[2], a_char[1000], b_char[1000], x_g_char[1000], y_g_char[1000], x_a_char[1000], y_a_char[1000];
@@ -74,7 +76,11 @@ void sm2_sign(const Big &Za, unsigned char *message, unsigned int message_len, c
 
     // hash(M)
     SM3Calc(M, message_len + Za_len, e_char);
+    free(M);
     e = char2big(e_char, 32);
+#ifdef SM2_SIGN_DEBUG
+    cout << "e in sign: " << e << "\n";
+#endif
 
     restart_sign:
 
@@ -84,8 +90,8 @@ void sm2_sign(const Big &Za, unsigned char *message, unsigned int message_len, c
     irand(unsigned(tn.tv_nsec));
     bigrand(n.getbig(), k.getbig());
 
-#ifdef DEBUG
-    cout << "[enc] rand k: " << k << "\n";
+#ifdef SM2_SIGN_DEBUG
+    cout << "rand k: " << k << "\n";
 #endif
 
     // c1 -> <x1, y1>
@@ -95,9 +101,90 @@ void sm2_sign(const Big &Za, unsigned char *message, unsigned int message_len, c
     // r, s
     r = (e + x1) % n;
     if (r == 0 || r + k == n) goto restart_sign;
-    xgcd((1 + key).getbig(), p.getbig(), xd.getbig(), yd.getbig(), z.getbig());
+    xgcd((1 + key).getbig(), n.getbig(), xd.getbig(), yd.getbig(), z.getbig());
     if (z != 1) throw exception();  // check
-    s = (xd * (k - r * key)) % n;
+    s = ((xd * (k - r * key)) % n + n) % n;
     if (s == 0) goto restart_sign;
 }
 
+bool sm2_verify(unsigned char *message, unsigned int message_len, const Big &Za, const Big &r, const Big &s,
+                const Big &xa, const Big &ya) {
+    miracl *mip = mirsys(20, 0);
+    FPECC ecc_config = Ecc256;
+    Big a, b, p, n, g_x, g_y;
+    epoint *g, *pa;
+
+    unsigned char *M;
+    unsigned char e_char[32]; // hash 256
+    Big e, t, x1, y1, R;
+
+    // ecc parameter
+    mip->IOBASE = 16;
+    cinstr(p.getbig(), ecc_config.p);
+    cinstr(a.getbig(), ecc_config.a);
+    cinstr(b.getbig(), ecc_config.b);
+    cinstr(n.getbig(), ecc_config.n);
+    cinstr(g_x.getbig(), ecc_config.x);
+    cinstr(g_y.getbig(), ecc_config.y);
+    // init ecc
+    ecurve_init(a.getbig(), b.getbig(), p.getbig(), MR_PROJECTIVE);
+    g = epoint_init();
+    pa = epoint_init();
+    epoint_set(g_x.getbig(), g_y.getbig(), 0, g);
+    epoint_set(xa.getbig(), ya.getbig(), 0, pa);
+
+    // check r, s
+    if (r < 1 || r >= n) {
+#ifdef SM2_SIGN_DEBUG
+        cout << "Signature invalid: r < 1 or r >= n" << "\n";
+#endif
+        return false;
+    }
+    if (s < 1 || s >= n) {
+#ifdef SM2_SIGN_DEBUG
+        cout << "Signature invalid: s < 1 or s >= n" << "\n";
+#endif
+        return false;
+    }
+
+    // Za
+    unsigned int Za_len;
+    unsigned char Za_char[1000];
+    big2char(Za, Za_char, Za_len);
+    // Za || M
+    M = (unsigned char *) malloc(sizeof(char) * (Za_len + message_len));
+    memcpy(M, Za_char, Za_len);
+    memcpy(M + Za_len, message, message_len);
+
+    // e
+    SM3Calc(M, (unsigned int) (Za_len + message_len), e_char);
+    free(M);
+    e = char2big(e_char, 32);
+#ifdef SM2_SIGN_DEBUG
+    cout << "e in verify: " << e << "\n";
+#endif
+
+    // t
+    t = (r + s) % n;
+#ifdef SM2_SIGN_DEBUG
+    cout << "t: " << t << "\n";
+#endif
+    if (t == 0) {
+#ifdef SM2_SIGN_DEBUG
+        cout << "Signature invalid: t!=0" << "\n";
+#endif
+        return false;
+    }
+
+    ecurve_mult(s.getbig(), g, g);
+    ecurve_mult(t.getbig(), pa, pa);
+    ecurve_add(pa, g); // g = pa+g <- s*G+t*P_A
+
+    epoint_get(g, x1.getbig(), y1.getbig());
+
+    R = (e + x1) % n;
+#ifdef SM2_SIGN_DEBUG
+    cout << "R: " << R << "\n" << "r: " << r << "\n";
+#endif
+    return R == r ? true : false;
+}
