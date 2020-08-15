@@ -142,54 +142,43 @@ TEST_CASE("SM2 Signature") {
         Big x_a, y_a, key;
         sm2_key_gen(x_a, y_a, key);
 
-        miracl *mip = mirsys(20, 0);
-        mip->IOBASE = 16;
-        Big a, b, x_g, y_g;
-        cinstr(a.getbig(), Ecc256.a);
-        cinstr(b.getbig(), Ecc256.b);
-        cinstr(x_g.getbig(), Ecc256.x);
-        cinstr(y_g.getbig(), Ecc256.y);
-        mip->IOBASE = 10;
-
-        Big za_hash_value = hash_Za((unsigned char *) "test id", strlen("test id"),
-                                    a, b, x_g, y_g, x_a, y_a);
-
+        char id_a[100] = "test_user";
         char message_to_sign[100] = "Hello, SM2!";
         Big r, s;
 
-        sm2_sign(za_hash_value, (unsigned char *) message_to_sign, strlen(message_to_sign), key, r, s);
+        sm2_sign((unsigned char *) id_a, strlen(id_a),
+                 (unsigned char *) message_to_sign, strlen(message_to_sign),
+                 key, r, s);
 
         cout << "r: " << r << "\n";
         cout << "s: " << s << "\n";
     }
 
     SECTION("SM2 Verify") {
-        cout << "[SM2 Verify]" << "\n";
+        for (int i = 1; i <= 1000; i++) {
+            cout << "[SM2 Verify](Case " << i << ")\n";
 
-        Big x_a, y_a, key;
-        sm2_key_gen(x_a, y_a, key);
+            Big x_a, y_a, key;
+            char id_a[100] = "test_user";
+            char message_to_sign[100] = "Hello, SM2!";
+            Big r, s;
 
-        miracl *mip = mirsys(20, 0);
-        mip->IOBASE = 16;
-        Big a, b, x_g, y_g;
-        cinstr(a.getbig(), Ecc256.a);
-        cinstr(b.getbig(), Ecc256.b);
-        cinstr(x_g.getbig(), Ecc256.x);
-        cinstr(y_g.getbig(), Ecc256.y);
-        mip->IOBASE = 10;
+            cout << "(Key gen)\n";
+            sm2_key_gen(x_a, y_a, key);
 
-        Big za_hash_value = hash_Za((unsigned char *) "test id", strlen("test id"),
-                                    a, b, x_g, y_g, x_a, y_a);
+            cout << "(Sign)\n";
+            sm2_sign((unsigned char *) id_a, strlen(id_a),
+                     (unsigned char *) message_to_sign, strlen(message_to_sign),
+                     key, r, s);
 
-        char message_to_sign[100] = "Hello, SM2!";
-        Big r, s;
+            cout << "r: " << r << "\n";
+            cout << "s: " << s << "\n";
 
-        sm2_sign(za_hash_value, (unsigned char *) message_to_sign, strlen(message_to_sign), key, r, s);
-
-        cout << "r: " << r << "\n";
-        cout << "s: " << s << "\n";
-
-        REQUIRE(sm2_verify((unsigned char *) message_to_sign, strlen(message_to_sign), za_hash_value, r, s, x_a, y_a));
+            cout << "(Verify)\n";
+            REQUIRE(sm2_verify((unsigned char *) id_a, strlen(id_a),
+                               (unsigned char *) message_to_sign, strlen(message_to_sign),
+                               r, s, x_a, y_a));
+        }
     }
 
 }

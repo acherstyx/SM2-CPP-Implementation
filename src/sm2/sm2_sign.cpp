@@ -10,6 +10,11 @@
 
 Big hash_Za(unsigned char *ID_A, unsigned int ID_A_len, const Big &a, const Big &b,
             const Big &x_g, const Big &y_g, const Big &x_a, const Big &y_a) {
+#ifdef SM2_SIGN_DEBUG
+    cout << "ID: " << ID_A << " ID len: " << ID_A_len << "\n";
+    cout << "a: " << a << " b: " << b << "\n";
+    cout << "xa: " << x_a << "\n" << "ya: " << y_a << "\n";
+#endif
     unsigned char ENTL[2], a_char[1000], b_char[1000], x_g_char[1000], y_g_char[1000], x_a_char[1000], y_a_char[1000];
     unsigned int ENTL_len, a_len, b_len, x_g_len, y_g_len, x_a_len, y_a_len;
 
@@ -38,11 +43,16 @@ Big hash_Za(unsigned char *ID_A, unsigned int ID_A_len, const Big &a, const Big 
 
     SM3Calc(message, ENTL_len + ID_A_len + a_len + b_len + x_g_len + y_g_len + x_a_len + y_a_len, hash_result);
 
+
+#ifdef SM2_SIGN_DEBUG
+    cout << "Z_A: " << char2big(hash_result, 32) << "\n";
+#endif
     return char2big(hash_result, 32);
 }
 
 
-void sm2_sign(const Big &Za, unsigned char *message, unsigned int message_len, const Big &key, Big &r, Big &s) {
+void sm2_sign(unsigned char *ID_A, unsigned int ID_A_len, unsigned char *message, unsigned int message_len,
+              const Big &key, Big &r, Big &s) {
     miracl *mip = mirsys(20, 0);
     FPECC ecc_config = Ecc256;
     Big a, b, p, n, g_x, g_y;
@@ -51,9 +61,8 @@ void sm2_sign(const Big &Za, unsigned char *message, unsigned int message_len, c
     unsigned char Za_char[1000];
     unsigned int Za_len;
     unsigned char e_char[32]; // hash 256
-    Big e, k, x1, y1, xd, yd, z;
+    Big Za, e, k, x1, y1, xd, yd, z;
     epoint *g;
-
 
     // ecc parameter
     mip->IOBASE = 16;
@@ -63,16 +72,28 @@ void sm2_sign(const Big &Za, unsigned char *message, unsigned int message_len, c
     cinstr(n.getbig(), ecc_config.n);
     cinstr(g_x.getbig(), ecc_config.x);
     cinstr(g_y.getbig(), ecc_config.y);
+    mip->IOBASE = 10;
     // init ecc
     ecurve_init(a.getbig(), b.getbig(), p.getbig(), MR_PROJECTIVE);
     g = epoint_init();
     epoint_set(g_x.getbig(), g_y.getbig(), 0, g);
+
+    // Za
+    epoint *pa = epoint_init();
+    epoint_set(g_x.getbig(), g_y.getbig(), 0, pa);
+    ecurve_mult(key.getbig(), pa, pa);
+    Big xa, ya;
+    epoint_get(pa, xa.getbig(), ya.getbig());
+    Za = hash_Za(ID_A, ID_A_len, a, b, g_x, g_y, xa, ya);
 
     // Z_a || M
     big2char(Za, Za_char, Za_len);
     M = (unsigned char *) malloc(sizeof(unsigned char) * (message_len + Za_len));
     memcpy(M, Za_char, Za_len);
     memcpy(M + Za_len, message, message_len);
+#ifdef SM2_SIGN_DEBUG
+    cout << "Za len: " << Za_len << "\n";
+#endif
 
     // hash(M)
     SM3Calc(M, message_len + Za_len, e_char);
@@ -107,8 +128,8 @@ void sm2_sign(const Big &Za, unsigned char *message, unsigned int message_len, c
     if (s == 0) goto restart_sign;
 }
 
-bool sm2_verify(unsigned char *message, unsigned int message_len, const Big &Za, const Big &r, const Big &s,
-                const Big &xa, const Big &ya) {
+bool sm2_verify(unsigned char *ID_A, unsigned int ID_A_len, unsigned char *message, unsigned int message_len,
+                const Big &r, const Big &s, const Big &xa, const Big &ya) {
     miracl *mip = mirsys(20, 0);
     FPECC ecc_config = Ecc256;
     Big a, b, p, n, g_x, g_y;
@@ -116,7 +137,7 @@ bool sm2_verify(unsigned char *message, unsigned int message_len, const Big &Za,
 
     unsigned char *M;
     unsigned char e_char[32]; // hash 256
-    Big e, t, x1, y1, R;
+    Big Za, e, t, x1, y1, R;
 
     // ecc parameter
     mip->IOBASE = 16;
@@ -126,12 +147,17 @@ bool sm2_verify(unsigned char *message, unsigned int message_len, const Big &Za,
     cinstr(n.getbig(), ecc_config.n);
     cinstr(g_x.getbig(), ecc_config.x);
     cinstr(g_y.getbig(), ecc_config.y);
+    mip->IOBASE = 10;
     // init ecc
     ecurve_init(a.getbig(), b.getbig(), p.getbig(), MR_PROJECTIVE);
     g = epoint_init();
     pa = epoint_init();
     epoint_set(g_x.getbig(), g_y.getbig(), 0, g);
     epoint_set(xa.getbig(), ya.getbig(), 0, pa);
+
+    // Za
+    epoint_get(pa, xa.getbig(), ya.getbig());
+    Za = hash_Za(ID_A, ID_A_len, a, b, g_x, g_y, xa, ya);
 
     // check r, s
     if (r < 1 || r >= n) {
