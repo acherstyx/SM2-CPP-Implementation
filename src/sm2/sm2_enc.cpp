@@ -8,7 +8,7 @@
 #include "big.h"
 #include "ecn.h"
 
-#define DEBUG
+//#define SM2_ENC_DEBUG
 
 struct FPECC Ecc256 = {
         "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF",
@@ -110,11 +110,6 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     Big x2, y2;
     unsigned char zl[32], zr[32];
 
-
-    big test1 = mirvar(10009);
-    Big test(test1);
-    cout << "===========" << test << "==================\n";
-
     mip->IOBASE = 16;
 
     // get ecc parameter
@@ -142,7 +137,7 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     irand(unsigned(tn.tv_nsec));
     bigrand(n.getbig(), k.getbig());
 
-#ifdef DEBUG
+#ifdef SM2_ENC_DEBUG
     cout << "[enc] rand k: " << k << "\n";
 #endif
 
@@ -152,7 +147,7 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     big_to_bytes(32, x1.getbig(), (char *) msg_after_enc, TRUE);
     big_to_bytes(32, y1.getbig(), (char *) msg_after_enc + 32, TRUE);
 
-#ifdef DEBUG
+#ifdef SM2_ENC_DEBUG
     cout << "[enc] x1: " << x1 << " y1: " << y1 << "\n";
 #endif
 
@@ -160,7 +155,7 @@ int sm2_enc(unsigned char *msg, int msg_len, Big x, Big y, unsigned char *msg_af
     ecurve_mult(k.getbig(), pb, pb);
     epoint_get(pb, x2.getbig(), y2.getbig());
 
-#ifdef DEBUG
+#ifdef SM2_ENC_DEBUG
     cout << "[enc] x2: " << x2 << " y2: " << y2 << '\n';
 #endif
 
@@ -215,7 +210,7 @@ int sm2_dec(unsigned char *msg, int msg_len, Big d, unsigned char *msg_dec) {
     big_to_bytes(32, x2.getbig(), (char *) zl, TRUE);
     big_to_bytes(32, y2.getbig(), (char *) zr, TRUE);
 
-#ifdef DEBUG
+#ifdef SM2_ENC_DEBUG
     cout << "[dec] x2: " << x2 << " y2: " << y2 << '\n';
     cout << "[dec] <x2, y2> should be the same with <x2, y2> in [enc]!\n";
 #endif

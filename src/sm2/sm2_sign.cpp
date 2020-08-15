@@ -6,7 +6,7 @@
 #include <ctime>
 #include <cstdlib>
 
-#define SM2_SIGN_DEBUG
+//#define SM2_SIGN_DEBUG
 
 Big hash_Za(unsigned char *ID_A, unsigned int ID_A_len, const Big &a, const Big &b,
             const Big &x_g, const Big &y_g, const Big &x_a, const Big &y_a) {
